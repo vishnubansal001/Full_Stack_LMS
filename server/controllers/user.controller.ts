@@ -7,6 +7,7 @@ import jwt, { Secret } from "jsonwebtoken";
 import ejs from "ejs";
 import path from "path";
 import { sendMail } from "../utils/sendMail";
+import { sendToken } from "../utils/jwt";
 
 interface IRegisterationBody {
   name: string;
@@ -125,6 +126,36 @@ export const activateUser = CatchAsyncErrors(
         // message: "Account activated successfully",
         // user,
       });
+    } catch (error: any) {
+      return next(new ErrorHandler(400, error.message));
+    }
+  }
+);
+
+interface ILoginRequest {
+  email: string;
+  password: string;
+}
+
+export const loginUser = CatchAsyncErrors(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { email, password } = req.body as ILoginRequest;
+      if (!email || !password) {
+        return next(new ErrorHandler(400, "Please enter email and password"));
+      }
+
+      const user = await User.findOne({ email }).select("+password");
+      if (!user) {
+        return next(new ErrorHandler(400, "Invalid email or password"));
+      }
+
+      const isPasswordMatched = await user.comparePassword(password);
+      if (!isPasswordMatched) {
+        return next(new ErrorHandler(400, "Invalid email or password"));
+      }
+
+      sendToken(user, 200, res);
     } catch (error: any) {
       return next(new ErrorHandler(400, error.message));
     }
