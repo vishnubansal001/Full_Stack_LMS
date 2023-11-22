@@ -18,19 +18,29 @@ export const isAuthenticated = CatchAsyncErrors(
     ) as JwtPayload;
 
     if (!decoded) {
-      return next(
-        new ErrorHandler(400, "access token invalid.")
-      );
+      return next(new ErrorHandler(400, "access token invalid."));
     }
 
     const user = await redis.get(decoded.id);
     if (!user) {
-      return next(
-        new ErrorHandler(400, "User not found.")
-      );
+      return next(new ErrorHandler(400, "User not found."));
     }
 
     req.user = JSON.parse(user);
     next();
   }
 );
+
+export const authorizeRoles = (...roles: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!roles.includes(req.user?.role || "")) {
+      return next(
+        new ErrorHandler(
+          403,
+          `Role (${req.user?.role}) is not allowed to access this resource.`
+        )
+      );
+    }
+    next();
+  };
+};
