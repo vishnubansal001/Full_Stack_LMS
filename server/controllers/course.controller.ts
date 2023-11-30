@@ -43,15 +43,50 @@ export const editCourse = CatchAsyncErrors(
       const courseId = req.params.id;
 
       const course = await Course.findByIdAndUpdate(
-        courseId,{
+        courseId,
+        {
           $set: data,
-        },{
+        },
+        {
           new: true,
         }
       );
       res.status(201).json({
         status: true,
         course,
+      });
+    } catch (err: any) {
+      return next(new ErrorHandler(err.message, 500));
+    }
+  }
+);
+
+export const getSingleCourse = CatchAsyncErrors(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const courseId = req.params.id;
+      const course = await Course.findById(courseId).select(
+        "-courseData.videoUrl -courseData.suggestion -courseData.links -courseData.questions"
+      );
+      res.status(200).json({
+        status: true,
+        course,
+      });
+    } catch (err: any) {
+      return next(new ErrorHandler(err.message, 500));
+    }
+  }
+);
+
+export const getAllCourses = CatchAsyncErrors(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const courses = await Course.find().select(
+        "-courseData.videoUrl -courseData.suggestion -courseData.links -courseData.questions"
+      );
+      res.status(200).json({
+        status: true,
+        courses,
       });
     } catch (err: any) {
       return next(new ErrorHandler(err.message, 500));
