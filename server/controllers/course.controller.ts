@@ -5,6 +5,7 @@ import cloudinary from "cloudinary";
 import { createCourse } from "../services/course.service";
 import Course from "../models/course.model";
 import { redis } from "../utils/redis";
+import mongoose from "mongoose";
 
 export const uploadCourse = CatchAsyncErrors(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -110,6 +111,74 @@ export const getAllCourses = CatchAsyncErrors(
           courses,
         });
       }
+    } catch (err: any) {
+      return next(new ErrorHandler(err.message, 500));
+    }
+  }
+);
+
+export const getCourseByUser = CatchAsyncErrors(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userCourseList = req.user?.courses;
+      const courseId = req.params.id;
+      const courseExists = userCourseList?.find(
+        (course: any) => course._id.toString() === courseId
+      );
+      if (!courseExists) {
+        return next(
+          new ErrorHandler(400, "You don't have access to this course")
+        );
+      }
+      const course = await Course.findById(courseId);
+      const content = course?.courseData;
+
+      res.status(200).json({
+        status: true,
+        content,
+      });
+    } catch (err: any) {
+      return next(new ErrorHandler(err.message, 500));
+    }
+  }
+);
+
+interface IAddQuestionData {
+  question: string;
+  answer: string;
+  contentId: string;
+}
+
+export const addQuestion = CatchAsyncErrors(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { question, answer, contentId }: IAddQuestionData = req.body;
+      const course = await Course.findById(contentId);
+      if (!mongoose.Types.ObjectId.isValid(contentId)) {
+        return next(new ErrorHandler(400, "Invalid Content Id"));
+      }
+
+      const courseContent = course?.courseData.find((item: any) =>
+        item._id.equals(contentId)
+      );
+      if (!courseContent) {
+        return next(new ErrorHandler(400, "Invalid Content Id"));
+      }
+
+      const newQuestion: any = {
+        user: req.user,
+        question,
+        questionReplies: [],
+      };
+
+      courseContent.questions.push(newQuestion);
+
+      await course?.save();
+
+      res.status(200).json({
+        success: true,
+        course,
+      });
     } catch (err: any) {
       return next(new ErrorHandler(err.message, 500));
     }
