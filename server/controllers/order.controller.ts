@@ -8,7 +8,7 @@ import { sendMail } from "../utils/sendMail";
 import User from "../models/user.model";
 import Notification from "../models/notification.model";
 import Course from "../models/course.model";
-import { newOrder } from "../services/order.service";
+import { getAllOrdersService, newOrder } from "../services/order.service";
 
 export const createOrder = CatchAsyncErrors(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -83,6 +83,16 @@ export const createOrder = CatchAsyncErrors(
       newOrder(data, res, next);
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 500));
+    }
+  }
+);
+
+export const getAllOrder = CatchAsyncErrors(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      getAllOrdersService(res);
+    } catch (error: any) {
+      return next(new ErrorHandler(400, error.message));
     }
   }
 );

@@ -11,3 +11,11 @@ export const newOrder = CatchAsyncErrors(
     });
   }
 );
+
+export const getAllOrdersService = async (res: Response) => {
+  const courses = await Order.find().sort({ createdAt: -1 });
+  res.status(201).json({
+    success: true,
+    courses,
+  });
+};
