@@ -13,7 +13,11 @@ import {
   sendToken,
 } from "../utils/jwt";
 import { redis } from "../utils/redis";
-import { getAllUsersService, getUserById, updateUserRoleService } from "../services/user.service";
+import {
+  getAllUsersService,
+  getUserById,
+  updateUserRoleService,
+} from "../services/user.service";
 import cloudinary from "cloudinary";
 
 interface IRegisterationBody {
@@ -419,6 +423,31 @@ export const updateUserRole = CatchAsyncErrors(
     try {
       const { id, role } = req.body;
       updateUserRoleService(res, id, role);
+    } catch (error: any) {
+      return next(new ErrorHandler(400, error.message));
+    }
+  }
+);
+
+export const deleteUser = CatchAsyncErrors(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+
+      const user = await User.findById(id);
+
+      if (!user) {
+        return next(new ErrorHandler(400, "User not found"));
+      }
+
+      await user.deleteOne();
+
+      await redis.del(id);
+
+      res.status(200).json({
+        success: true,
+        message: "User deleted successfully",
+      });
     } catch (error: any) {
       return next(new ErrorHandler(400, error.message));
     }
